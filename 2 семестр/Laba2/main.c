@@ -55,7 +55,8 @@ Node* reduce_expression(Node* root) {
 
     // Если это операция возведения в степень
     if (root->op == '^') {
-        if (root->right->type == 'C') {
+        // Проверяем, что левый операнд — переменная, а правый — константа
+        if (root->left->type == 'V' && root->right->type == 'C') {
             int exponent = root->right->value;
             if (exponent < 0) {
                 printf("Отрицательные степени не поддерживаются.\n");
