@@ -49,7 +49,6 @@ Node* create_node(char type, int value, char op, char var) {
     return node;
 }
 
-// Функция для редукции выражения
 Node* reduce_expression(Node* root) {
     if (root == NULL) return NULL;
 
@@ -59,21 +58,32 @@ Node* reduce_expression(Node* root) {
         if (root->left->type == 'V' && root->right->type == 'C') {
             int exponent = root->right->value;
             if (exponent < 0) {
-                printf("Отрицательные степени не поддерживаются.\n");
-                exit(1);
-            }
-            Node* result = create_node('O', 0, '*', 0);
-            Node* current = create_node('V', 0, 0, root->left->var);
-            result->left = current;
+                // Обработка отрицательной степени
+                Node* result = create_node('O', 0, '/', 0);
+                result->left = create_node('C', 1, 0, 0); // 1 в числителе
 
-            for (int i = 1; i < exponent; i++) {
-                Node* new_node = create_node('O', 0, '*', 0);
-                new_node->left = create_node('V', 0, 0, root->left->var);
-                new_node->right = current;
-                current = new_node;
-            }
+                // Создаем узел для x^n, где n — положительная степень
+                Node* power_node = create_node('O', 0, '^', 0);
+                power_node->left = create_node('V', 0, 0, root->left->var);
+                power_node->right = create_node('C', -exponent, 0, 0); // -exponent, так как exponent отрицательный
 
-            return current;
+                result->right = power_node;
+                return result;
+            } else {
+                // Обработка положительной степени
+                Node* result = create_node('O', 0, '*', 0);
+                Node* current = create_node('V', 0, 0, root->left->var);
+                result->left = current;
+
+                for (int i = 1; i < exponent; i++) {
+                    Node* new_node = create_node('O', 0, '*', 0);
+                    new_node->left = create_node('V', 0, 0, root->left->var);
+                    new_node->right = current;
+                    current = new_node;
+                }
+
+                return current;
+            }
         }
     }
 
@@ -140,6 +150,7 @@ int precedence(char op) {
         case '/': return 3;
         case '+':
         case '-': return 2;
+        case '~': return 5; // Унарный минус имеет высший приоритет
         default: return 0;
     }
 }
@@ -152,12 +163,23 @@ void infix_to_postfix(const char* input, char* output) {
     char ch;
 
     while ((ch = input[i]) != '\0') {
-        if (isdigit(ch)) {
-            // Обработка чисел
-            while (isdigit(input[i])) {
-                output[output_index++] = input[i++];
+        if (isdigit(ch) || (ch == '-' && (i == 0 || input[i-1] == '(' || precedence(input[i-1]) > 0))) {
+            // Обработка чисел и унарного минуса
+            if (ch == '-') {
+                output[output_index++] = '~'; // Используем '~' для унарного минуса
+                i++;
+            } else {
+                int num = 0;
+                while (isdigit(input[i])) {
+                    num = num * 10 + (input[i] - '0');
+                    i++;
+                }
+                char num_str[12];
+                sprintf(num_str, "%d", num);
+                strcpy(&output[output_index], num_str);
+                output_index += strlen(num_str);
+                output[output_index++] = ' '; // Разделитель
             }
-            output[output_index++] = ' '; // Разделитель
         } else if (isalpha(ch)) {
             // Обработка переменных
             output[output_index++] = ch;
@@ -175,7 +197,7 @@ void infix_to_postfix(const char* input, char* output) {
             }
             pop(&op_stack); // Удаляем '(' из стека
             i++;
-        } else if (ch == '+' || ch == '-' || ch == '*' || ch == '/' || ch == '^') {
+        } else if (ch == '+' || ch == '-' || ch == '*' || ch == '/' || ch == '^' || ch == '~') {
             // Обработка операторов
             while (op_stack != NULL && precedence((char)(long)op_stack->data) >= precedence(ch)) {
                 output[output_index++] = (char)(long)pop(&op_stack);
@@ -208,26 +230,39 @@ Node* parse_postfix(const char* postfix) {
     char ch;
 
     while ((ch = postfix[i]) != '\0') {
-        if (isdigit(ch)) {
-            // Обработка чисел
+        if (isdigit(ch) || (ch == '~' && isdigit(postfix[i+1]))) {
+            // Обработка чисел и унарного минуса
+            int sign = 1;
+            if (ch == '~') {
+                sign = -1;
+                i++;
+            }
             int num = 0;
             while (isdigit(postfix[i])) {
                 num = num * 10 + (postfix[i] - '0');
                 i++;
             }
-            Node* node = create_node('C', num, 0, 0);
+            Node* node = create_node('C', sign * num, 0, 0);
             push(&stack, node);
         } else if (isalpha(ch)) {
             // Обработка переменных
             Node* node = create_node('V', 0, 0, ch);
             push(&stack, node);
             i++;
-        } else if (ch == '+' || ch == '-' || ch == '*' || ch == '/' || ch == '^') {
+        } else if (ch == '+' || ch == '-' || ch == '*' || ch == '/' || ch == '^' || ch == '~') {
             // Обработка операторов
-            Node* node = create_node('O', 0, ch, 0);
-            node->right = (Node*)pop(&stack);
-            node->left = (Node*)pop(&stack);
-            push(&stack, node);
+            if (ch == '~') {
+                // Унарный минус
+                Node* node = create_node('O', 0, '~', 0);
+                node->right = (Node*)pop(&stack);
+                push(&stack, node);
+            } else {
+                // Бинарные операторы
+                Node* node = create_node('O', 0, ch, 0);
+                node->right = (Node*)pop(&stack);
+                node->left = (Node*)pop(&stack);
+                push(&stack, node);
+            }
             i++;
         } else if (ch == ' ') {
             // Пропуск пробелов
