@@ -67,6 +67,9 @@ Node* reduce_expression(Node* root) {
                 power_node->left = create_node('V', 0, 0, root->left->var);
                 power_node->right = create_node('C', -exponent, 0, 0); // -exponent, так как exponent отрицательный
 
+                // Редуцируем power_node до конца
+                power_node = reduce_expression(power_node);
+
                 result->right = power_node;
                 return result;
             } else {
