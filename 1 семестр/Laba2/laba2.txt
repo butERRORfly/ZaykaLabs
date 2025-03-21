@@ -1,0 +1,233 @@
+0, ,<,left1
+left1,1,<,viewnext1
+left1,0,<,viewnext0
+left1, ,>,goend1
+
+goend1,1,>,goend1
+goend1,0,>,goend1
+goend1, ,!,goend2
+
+goend2,!,>,goend2
+goend2,1,>,goend2
+goend2,0,>,goend2
+goend2, ,<,del0
+
+del0,0, ,del0
+del0, ,<,del0
+del0,1,>,end#
+del0,!, ,del!
+
+del!, ,&,godel!
+
+godel!, ,>,del0
+godel!,&, ,if0end
+
+if0end, ,>,if0endend
+if0endend, ,0,if0q
+
+if0q,0,>,ifqq
+
+ifqq, ,#,ifqq
+
+end#,1,>,end#
+end#,0,>,end#
+end#, ,<,reverse
+
+reverse,1,&,copy1
+reverse,0,!,copy0
+reverse, ,>,deltmp
+reverse,!, ,reverse
+
+deltmp,1, ,nextdel
+deltmp,0, ,nextdel
+deltmp, ,>,endend
+
+endend,1,>,endend
+endend,0,>,endend
+endend, ,<,ee
+
+nextdel, ,>,deltmp
+
+copy1,&,>,copy1
+copy1,1,>,copy1
+copy1,0,>,copy1
+copy1, ,>,put1
+
+put1, ,1,goatstart
+put1,1,>,put1
+put1,0,>,put1
+
+goatstart,1,<,goatstart
+goatstart,0,<,goatstart
+goatstart, ,<,new
+
+new,1,<,new
+new,0,<,new
+new,&,1,goon
+
+goon,1,<,reverse
+goon,0,<,reverse
+
+copy0,!,>,copy0
+copy0,1,>,copy0
+copy0,0,>,copy0
+copy0, ,>,put0
+
+put0, ,0,goatstart0
+put0,1,>,put0
+put0,0,>,put0
+
+goatstart0,1,<,goatstart0
+goatstart0,0,<,goatstart0
+goatstart0, ,<,new0
+
+new0,1,<,new0
+new0,0,<,new0
+new0,!,0,goon
+
+
+# если первый на входе разряд единица
+viewnext1,1,!,truenext1
+viewnext1,0,!,falsenext1
+viewnext1, ,>,falsenext1
+
+truenext1,!,>,pass11
+
+pass11,1,>,pass11
+pass11,0,>,pass11
+pass11, ,>,copy11
+
+copy11, ,!,put11
+copy11,1,>,copy11
+copy11,0,>,copy11
+
+put11,!,1,put11
+put11,1,>,put11
+put11, ,1,nextstep1
+
+falsenext1,!,>,pass10
+falsenext1,1,>,pass10
+falsenext1,0,>,pass10
+
+pass10,1,>,pass10
+pass10,0,>,pass10
+pass10, ,>,copy10
+
+copy10, ,!,put10
+copy10,0,>,copy10
+copy10,1,>,copy10
+
+put10,!,0,put10
+put10,0,>,put10
+put10, ,1,nextstep0
+
+nextstep1,0,<,nextstep1
+nextstep1,1,<,nextstep1
+nextstep1, ,<,bringback1
+
+bringback1,1,<,bringback1
+bringback1,0,<,bringback1
+bringback1,!,1,start1
+bringback1, , ,left1
+
+nextstep0,0,<,nextstep0
+nextstep0,1,<,nextstep0
+nextstep0, ,<,bringback0
+
+bringback0,0,<,bringback0
+bringback0,1,<,bringback0
+bringback0,!,0,start1
+bringback0, , ,left1
+
+start1,1,<,left1
+start1,0,<,left1
+
+# если первый на входе разряд ноль
+viewnext0,0,!,truenext0
+viewnext0,1,!,falsenext0
+viewnext0, ,>,truenext0
+
+truenext0,!,>,pass00
+truenext0,0,>,pass00
+truenext0,1,>,pass00
+
+pass00,1,>,pass00
+pass00,0,>,pass00
+pass00, ,>,copy00
+
+copy00, ,!,put00
+copy00,1,>,copy00
+copy00,0,>,copy00
+
+put00,!,0,put00
+put00,0,>,put00
+put00, ,0,nextstep00
+
+falsenext0,!,>,pass01
+
+
+pass01,1,>,pass01
+pass01,0,>,pass01
+pass01, ,>,copy01
+
+copy01, ,!,put01
+copy01,0,>,copy01
+copy01,1,>,copy01
+
+put01,!,1,put01
+put01,1,>,put01
+put01, ,0,nextstep01
+
+nextstep00,0,<,nextstep00
+nextstep00,1,<,nextstep00
+nextstep00, ,<,bringback00
+
+bringback00,1,<,bringback00
+bringback00,0,<,bringback00
+bringback00,!,0,start1
+bringback00, , ,left1
+
+nextstep01,0,<,nextstep01
+nextstep01,1,<,nextstep01
+nextstep01, ,<,bringback01
+
+bringback01,0,<,bringback01
+bringback01,1,<,bringback01
+bringback01,!,1,start1
+bringback01, , ,left1
+
+ee,1, ,ee1
+ee,0, ,ee0
+ee, ,#,ee
+
+#для 1
+ee1, ,<,ee11
+
+ee11,1,<,ee11
+ee11,0,<,ee11
+ee11, ,<,ee12
+
+ee12, ,1,ee111
+ee12,0,<,ee12
+ee12,1,<,ee12
+ee111,1,>,eee
+
+eeee,1,>,eeee
+eeee,0,>,eeee
+eeee, ,<,ee
+eee,0,>,eee
+eee,1,>,eee
+eee, ,>,eeee
+
+#для 0
+ee0, ,<,ee00
+
+ee00,1,<,ee00
+ee00,0,<,ee00
+ee00, ,<,ee01
+
+ee01, ,0,ee000
+ee01,0,<,ee01
+ee01,1,<,ee01
+ee000,0,>,eee
+
