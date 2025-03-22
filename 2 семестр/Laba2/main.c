@@ -1,7 +1,49 @@
 #include <stdio.h>
 #include <stdlib.h>
-#include <ctype.h>
-#include <string.h>
+
+// Функция для проверки, является ли символ цифрой
+int is_digit(char ch) {
+    return ch >= '0' && ch <= '9';
+}
+
+// Функция для проверки, является ли символ буквой
+int is_alpha(char ch) {
+    return (ch >= 'a' && ch <= 'z') || (ch >= 'A' && ch <= 'Z');
+}
+
+// Функция вычисления длины строки
+size_t my_strlen(const char* str) {
+    size_t len = 0;
+    while (str[len] != '\0') {
+        len++;
+    }
+    return len;
+}
+
+// Функция копирования строки
+char* my_strcpy(char* dest, const char* src) {
+    int i = 0;
+    while (src[i] != '\0') {
+        dest[i] = src[i];
+        i++;
+    }
+    dest[i] = '\0'; // Добавляем завершающий нулевой символ
+    return dest;
+}
+
+// Функция поиска первого вхождения символа
+size_t my_strcspn(const char* str, const char* reject) {
+    size_t len = 0;
+    while (str[len] != '\0') {
+        for (size_t i = 0; reject[i] != '\0'; i++) {
+            if (str[len] == reject[i]) {
+                return len; // Возвращаем позицию первого совпадения
+            }
+        }
+        len++;
+    }
+    return len; // Если совпадений нет, возвращаем длину строки
+}
 
 // Структура для узла дерева выражений
 typedef struct Node {
@@ -166,24 +208,24 @@ void infix_to_postfix(const char* input, char* output) {
     char ch;
 
     while ((ch = input[i]) != '\0') {
-        if (isdigit(ch) || (ch == '-' && (i == 0 || input[i-1] == '(' || precedence(input[i-1]) > 0))) {
+        if (is_digit(ch) || (ch == '-' && (i == 0 || input[i-1] == '(' || precedence(input[i-1]) > 0))) {
             // Обработка чисел и унарного минуса
             if (ch == '-') {
                 output[output_index++] = '~'; // Используем '~' для унарного минуса
                 i++;
             } else {
                 int num = 0;
-                while (isdigit(input[i])) {
+                while (is_digit(input[i])) {
                     num = num * 10 + (input[i] - '0');
                     i++;
                 }
                 char num_str[12];
                 sprintf(num_str, "%d", num);
-                strcpy(&output[output_index], num_str);
-                output_index += strlen(num_str);
+                my_strcpy(&output[output_index], num_str);
+                output_index += my_strlen(num_str);
                 output[output_index++] = ' '; // Разделитель
             }
-        } else if (isalpha(ch)) {
+        } else if (is_alpha(ch)) {
             // Обработка переменных
             output[output_index++] = ch;
             i++;
@@ -233,7 +275,7 @@ Node* parse_postfix(const char* postfix) {
     char ch;
 
     while ((ch = postfix[i]) != '\0') {
-        if (isdigit(ch) || (ch == '~' && isdigit(postfix[i+1]))) {
+        if (is_digit(ch) || (ch == '~' && is_digit(postfix[i+1]))) {
             // Обработка чисел и унарного минуса
             int sign = 1;
             if (ch == '~') {
@@ -241,13 +283,13 @@ Node* parse_postfix(const char* postfix) {
                 i++;
             }
             int num = 0;
-            while (isdigit(postfix[i])) {
+            while (is_digit(postfix[i])) {
                 num = num * 10 + (postfix[i] - '0');
                 i++;
             }
             Node* node = create_node('C', sign * num, 0, 0);
             push(&stack, node);
-        } else if (isalpha(ch)) {
+        } else if (is_alpha(ch)) {
             // Обработка переменных
             Node* node = create_node('V', 0, 0, ch);
             push(&stack, node);
@@ -284,7 +326,7 @@ int main() {
     char input[100];
     printf("Введите выражение: ");
     fgets(input, sizeof(input), stdin);
-    input[strcspn(input, "\n")] = '\0'; // Удаление символа новой строки
+    input[my_strcspn(input, "\n")] = '\0'; // Удаление символа новой строки
 
     // Преобразование инфиксной записи в постфиксную
     char postfix[200];
