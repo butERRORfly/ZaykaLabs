@@ -91,6 +91,14 @@ Node* create_node(char type, int value, char op, char var) {
     return node;
 }
 
+// Функция для освобождения памяти, выделенной под дерево
+void free_tree(Node* root) {
+    if (root == NULL) return;
+    free_tree(root->left);
+    free_tree(root->right);
+    free(root);
+}
+
 Node* reduce_expression(Node* root) {
     if (root == NULL) return NULL;
 
@@ -113,7 +121,11 @@ Node* reduce_expression(Node* root) {
                 power_node = reduce_expression(power_node);
 
                 result->right = power_node;
+
+                // ***
+                free_tree(root);
                 return result;
+
             } else {
                 // Обработка положительной степени
                 Node* result = create_node('O', 0, '*', 0);
@@ -127,6 +139,8 @@ Node* reduce_expression(Node* root) {
                     current = new_node;
                 }
 
+                // ***
+                free_tree(root);
                 return current;
             }
         }
@@ -179,13 +193,7 @@ void print_tree(Node* root, int depth) {
     print_tree(root->right, depth + 1);
 }
 
-// Функция для освобождения памяти, выделенной под дерево
-void free_tree(Node* root) {
-    if (root == NULL) return;
-    free_tree(root->left);
-    free_tree(root->right);
-    free(root);
-}
+
 
 // Функция для определения приоритета оператора
 int precedence(char op) {
