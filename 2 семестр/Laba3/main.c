@@ -94,81 +94,66 @@ void print_queue(queue* q) {
     }
 }
 
-// Процедура поиска и перемещения элемента
 int procedure(queue* q) {
-    if (size(q) < 2) {
-        return 0;
-    }
-    
-    // Создаем временную очередь для поиска
+    if (size(q) < 2) return 0;
+
     queue temp;
     init_queue(&temp);
     int swapped = 0;
     int prev_val = front(q);
     pop(q);
     push(&temp, prev_val);
-    
-    // Ищем первый элемент, который меньше предыдущего
+
     while (!empty(q)) {
         int current_val = front(q);
         if (current_val < prev_val) {
-            // Нашли элемент для перемещения
             pop(q);
-            
-            // Вставляем его в правильную позицию во временной очереди
             queue temp2;
             init_queue(&temp2);
-            int inserted = 0;
-            
-            // Переносим элементы из temp в temp2, пока не найдем место
+
             while (!empty(&temp)) {
                 int val = front(&temp);
-                if (!inserted && current_val < val) {
+                if (!swapped && current_val < val) {
                     push(&temp2, current_val);
-                    inserted = 1;
+                    swapped = 1;
                 }
-                pop(&temp);
                 push(&temp2, val);
+                pop(&temp);
             }
-            
-            // Если не вставили, добавляем в конец
-            if (!inserted) {
+
+            if (!swapped) {
                 push(&temp2, current_val);
             }
-            
-            // Копируем temp2 обратно в temp
+
             while (!empty(&temp2)) {
                 push(&temp, front(&temp2));
                 pop(&temp2);
             }
-            
-            swapped = 1;
-            break;
+
+            while (!empty(q)) {
+                push(&temp, front(q));
+                pop(q);
+            }
+
+            while (!empty(&temp)) {
+                push(q, front(&temp));
+                pop(&temp);
+            }
+
+            return 1;
         } else {
             prev_val = current_val;
-            pop(q);
             push(&temp, prev_val);
+            pop(q);
         }
     }
-    
-    // Возвращаем элементы из temp обратно в q
+
     while (!empty(&temp)) {
         push(q, front(&temp));
         pop(&temp);
     }
-    
-    // Добавляем оставшиеся элементы из исходной очереди
-    while (!empty(q)) {
-        push(&temp, front(q));
-        pop(q);
-    }
-    
-    while (!empty(&temp)) {
-        push(q, front(&temp));
-        pop(&temp);
-    }
-    
-    return swapped;
+
+    return 0;
 }
 
 // Сортировка очереди
@@ -177,9 +162,8 @@ void sort(queue* q) {
         return;
     }
     
-    // Применяем procedure() до тех пор, пока очередь не будет отсортирована
     while (procedure(q)) {
-        // Процедура будет вызываться, пока есть что менять
+        print_queue(q);
     }
 }
 
