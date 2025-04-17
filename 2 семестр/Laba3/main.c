@@ -156,6 +156,8 @@ int procedure(queue* q) {
     return 0;
 }
 
+
+
 // Сортировка очереди
 void sort(queue* q) {
     if (size(q) < 2) {
