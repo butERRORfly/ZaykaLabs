@@ -1,46 +1,26 @@
 #include "kernel.h"
 
-// Реализация my_strlen
-size_t my_strlen(const char* str) {
-    size_t len = 0;
-    while (str[len] != '\0') {
-        len++;
-    }
-    return len;
-}
-
-// Реализация my_strdup
-char* my_strdup(const char* str) {
-    size_t len = my_strlen(str) + 1;
-    char* new_str = malloc(len);
-    if (new_str == NULL) return NULL;
-    
-    for (size_t i = 0; i < len; i++) {
-        new_str[i] = str[i];
-    }
-    return new_str;
-}
-
-// Реализация my_strcmp
-int my_strcmp(const char* s1, const char* s2) {
-    while (*s1 && (*s1 == *s2)) {
-        s1++;
-        s2++;
-    }
-    return *(const unsigned char*)s1 - *(const unsigned char*)s2;
-}
-
 // Инициализация таблицы
 void initTable(SongTable* table) {
+    table->entries = malloc(INITIAL_CAPACITY * sizeof(TableEntry));
+    if (!table->entries) {
+        perror("Ошибка выделения памяти");
+        exit(EXIT_FAILURE);
+    }
     table->size = 0;
-    table->capacity = 10;
-    table->entries = malloc(table->capacity * sizeof(TableEntry));
+    table->capacity = INITIAL_CAPACITY;
 }
 
 // Увеличение емкости таблицы
 void increaseCapacity(SongTable* table) {
-    table->capacity *= 2;
-    table->entries = realloc(table->entries, table->capacity * sizeof(TableEntry));
+    int new_capacity = table->capacity * 2;
+    TableEntry* new_entries = realloc(table->entries, new_capacity * sizeof(TableEntry));
+    if (!new_entries) {
+        perror("Ошибка перевыделения памяти");
+        exit(EXIT_FAILURE);
+    }
+    table->entries = new_entries;
+    table->capacity = new_capacity;
 }
 
 // Добавление записи в таблицу
@@ -48,9 +28,26 @@ void addEntry(SongTable* table, long key, const char* value) {
     if (table->size == table->capacity) {
         increaseCapacity(table);
     }
-    
+
+    // Подсчет длины строки
+    int len = 0;
+    while (value[len] != '\0') {
+        len++;
+    }
+
+    // Выделение памяти под строку
+    table->entries[table->size].value = malloc(len + 1);
+    if (!table->entries[table->size].value) {
+        perror("Ошибка выделения памяти");
+        exit(EXIT_FAILURE);
+    }
+
+    // Копирование строки
+    for (int i = 0; i <= len; i++) {
+        table->entries[table->size].value[i] = value[i];
+    }
+
     table->entries[table->size].key = key;
-    table->entries[table->size].value = my_strdup(value);
     table->size++;
 }
 
@@ -90,7 +87,6 @@ void shakerSort(SongTable* table) {
     while (swapped) {
         swapped = false;
 
-        // Проход слева направо
         for (int i = start; i < end; ++i) {
             if (table->entries[i].key > table->entries[i + 1].key) {
                 swapEntries(&table->entries[i], &table->entries[i + 1]);
@@ -103,7 +99,6 @@ void shakerSort(SongTable* table) {
         swapped = false;
         end--;
 
-        // Проход справа налево
         for (int i = end - 1; i >= start; --i) {
             if (table->entries[i].key > table->entries[i + 1].key) {
                 swapEntries(&table->entries[i], &table->entries[i + 1]);
@@ -137,32 +132,36 @@ int binarySearch(const SongTable* table, long key) {
 }
 
 // Чтение слов из файла
-int readWordsFromFile(const char* filename, char*** words) {
+int readWordsFromFile(const char* filename, SongTable* table) {
     FILE* file = fopen(filename, "r");
     if (!file) {
         perror("Ошибка открытия файла");
         return 0;
     }
 
+    // Очищаем старую таблицу, если она была
+    if (table->entries != NULL) {
+        freeTable(table);
+    }
+    initTable(table);
+
     int wordCount = 0;
-    int capacity = 100;
-    *words = malloc(capacity * sizeof(char*));
-    
     char word[MAX_WORD_LENGTH];
+    
     while (fscanf(file, "%99s", word) == 1) {
         // Удаляем знаки препинания из слова
-        int len = my_strlen(word);
+        int len = 0;
+        while (word[len] != '\0') {
+            len++;
+        }
+        
         while (len > 0 && !isalpha(word[len - 1])) {
             word[len - 1] = '\0';
             len--;
         }
         
         if (len > 0) {
-            if (wordCount == capacity) {
-                capacity *= 2;
-                *words = realloc(*words, capacity * sizeof(char*));
-            }
-            (*words)[wordCount] = my_strdup(word);
+            addEntry(table, 0, word); // Ключ будет установлен позже
             wordCount++;
         }
     }
@@ -171,33 +170,25 @@ int readWordsFromFile(const char* filename, char*** words) {
     return wordCount;
 }
 
-// Освобождение массива слов
-void freeWords(char** words, int count) {
-    for (int i = 0; i < count; i++) {
-        free(words[i]);
-    }
-    free(words);
-}
-
 // Заполнение таблицы с возрастающими ключами
-void fillTableAscending(SongTable* table, char** words, int wordCount) {
-    for (int i = 0; i < wordCount; i++) {
-        addEntry(table, i + 1, words[i]);
+void fillTableAscending(SongTable* table) {
+    for (int i = 0; i < table->size; i++) {
+        table->entries[i].key = i + 1;
     }
 }
 
 // Заполнение таблицы с убывающими ключами
-void fillTableDescending(SongTable* table, char** words, int wordCount) {
-    for (int i = 0; i < wordCount; i++) {
-        addEntry(table, wordCount - i, words[i]);
+void fillTableDescending(SongTable* table) {
+    for (int i = 0; i < table->size; i++) {
+        table->entries[i].key = table->size - i;
     }
 }
 
 // Заполнение таблицы со случайными ключами
-void fillTableRandom(SongTable* table, char** words, int wordCount) {
+void fillTableRandom(SongTable* table) {
     srand(time(NULL));
-    for (int i = 0; i < wordCount; i++) {
-        addEntry(table, rand() % (wordCount * 2) + 1, words[i]);
+    for (int i = 0; i < table->size; i++) {
+        table->entries[i].key = rand() % (table->size * 2) + 1;
     }
 }
 
@@ -213,43 +204,28 @@ void changeKeyFormat(SongTable* table) {
     printf("2. По убыванию\n");
     printf("3. Случайные\n");
     printf("Ваш выбор: ");
+    
     int keyType;
-    scanf("%d", &keyType);
-
-    if (keyType < 1 || keyType > 3) {
-        printf("Неверный выбор.\n");
+    if (scanf("%d", &keyType) != 1) {
+        printf("Неверный ввод.\n");
         return;
     }
 
-    // Сохраняем текущие значения
-    int currentSize = table->size;
-    char** values = malloc(currentSize * sizeof(char*));
-    if (!values) {
-        perror("Ошибка выделения памяти");
-        return;
-    }
-
-    for (int i = 0; i < currentSize; i++) {
-        values[i] = table->entries[i].value;
-    }
-
-    // Очищаем таблицу (но не освобождаем значения, так как мы их сохранили)
-    table->size = 0;
-
-    // Заполняем с новыми ключами
     switch (keyType) {
         case 1:
-            fillTableAscending(table, values, currentSize);
+            fillTableAscending(table);
             break;
         case 2:
-            fillTableDescending(table, values, currentSize);
+            fillTableDescending(table);
             break;
         case 3:
-            fillTableRandom(table, values, currentSize);
+            fillTableRandom(table);
             break;
+        default:
+            printf("Неверный выбор.\n");
+            return;
     }
 
-    free(values);
     printf("Формат ключей успешно изменен.\n");
 }
 
@@ -266,32 +242,28 @@ void showMenu() {
 }
 
 int main() {
-    SongTable table;
-    initTable(&table);
-    
-    char** words = NULL;
-    int wordCount = 0;
+    SongTable table = {0}; // Инициализируем нулями
     bool isSorted = false;
     int choice;
     
     do {
         showMenu();
-        scanf("%d", &choice);
+        if (scanf("%d", &choice) != 1) {
+            while (getchar() != '\n');
+            printf("Неверный ввод. Попробуйте снова.\n");
+            continue;
+        }
         
         switch (choice) {
             case 1: {
-                // Загрузка песни из файла
-                if (words) {
-                    freeWords(words, wordCount);
-                    freeTable(&table);
-                    initTable(&table);
+                char filename[MAX_WORD_LENGTH];
+                printf("Введите имя файла с песней: ");
+                if (scanf("%99s", filename) != 1) {
+                    printf("Ошибка чтения имени файла.\n");
+                    break;
                 }
                 
-                char filename[100];
-                printf("Введите имя файла с песней: ");
-                scanf("%99s", filename);
-                
-                wordCount = readWordsFromFile(filename, &words);
+                int wordCount = readWordsFromFile(filename, &table);
                 if (wordCount == 0) {
                     printf("Не удалось прочитать слова из файла.\n");
                     break;
@@ -302,31 +274,36 @@ int main() {
                 printf("2. По убыванию\n");
                 printf("3. Случайные\n");
                 printf("Ваш выбор: ");
+                
                 int keyType;
-                scanf("%d", &keyType);
+                if (scanf("%d", &keyType) != 1) {
+                    printf("Неверный ввод.\n");
+                    break;
+                }
                 
                 switch (keyType) {
                     case 1:
-                        fillTableAscending(&table, words, wordCount);
+                        fillTableAscending(&table);
+                        isSorted = true;
                         break;
                     case 2:
-                        fillTableDescending(&table, words, wordCount);
+                        fillTableDescending(&table);
+                        isSorted = false;
                         break;
                     case 3:
-                        fillTableRandom(&table, words, wordCount);
+                        fillTableRandom(&table);
+                        isSorted = false;
                         break;
                     default:
                         printf("Неверный выбор.\n");
                         break;
                 }
                 
-                isSorted = (keyType == 1); // Если ключи по возрастанию, таблица уже отсортирована
                 printf("Таблица успешно загружена. Всего слов: %d\n", wordCount);
                 break;
             }
                 
             case 2: {
-                // Сортировка таблицы
                 if (table.size == 0) {
                     printf("Таблица пуста. Сначала загрузите песню.\n");
                     break;
@@ -344,7 +321,6 @@ int main() {
             }
                 
             case 3: {
-                // Поиск по ключу
                 if (table.size == 0) {
                     printf("Таблица пуста. Сначала загрузите песню.\n");
                     break;
@@ -357,7 +333,10 @@ int main() {
                 
                 long key;
                 printf("Введите ключ для поиска: ");
-                scanf("%ld", &key);
+                if (scanf("%ld", &key) != 1) {
+                    printf("Неверный ввод ключа.\n");
+                    break;
+                }
                 
                 int index = binarySearch(&table, key);
                 if (index != -1) {
@@ -370,7 +349,6 @@ int main() {
             }
                 
             case 4: {
-                // Вывод таблицы
                 if (table.size == 0) {
                     printf("Таблица пуста. Сначала загрузите песню.\n");
                     break;
@@ -381,14 +359,12 @@ int main() {
             }
                 
             case 5: {
-                // Изменение формата ключей
                 changeKeyFormat(&table);
                 isSorted = false;
                 break;
             }
                 
             case 6: {
-                // Выход
                 printf("Завершение программы...\n");
                 break;
             }
@@ -399,11 +375,6 @@ int main() {
         }
     } while (choice != 6);
     
-    // Освобождение памяти
-    if (words) {
-        freeWords(words, wordCount);
-    }
     freeTable(&table);
-    
     return 0;
 }
