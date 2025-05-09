@@ -1,4 +1,6 @@
 #include "pc_db.h"
+#include "db_writer.h"
+
 
 // Случайная генерация данных о компьютере
 Computer generate_random_computer(int id) {

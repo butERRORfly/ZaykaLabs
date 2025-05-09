@@ -45,25 +45,9 @@ typedef struct {
     OsType os;                         // Операционная система
 } Computer;
 
-// Структура для чтения базы данных
-typedef struct {
-    FILE* file;
-} DBReader;
-
-// Структура для записи в базу данных
-typedef struct {
-    FILE* file;
-} DBWriter;
-
 // Функции для работы с базой данных
 void print_computer(Computer pc);
 void print_computer_table_header();
-DBReader* db_reader_open(const char* filename);
-DBWriter* db_writer_open(const char* filename);
-void db_reader_close(DBReader* reader);
-void db_writer_close(DBWriter* writer);
-bool db_reader_read(DBReader* reader, Computer* pc);
-void db_writer_write(DBWriter* writer, Computer pc);
 void generate_db(const char* filename, int count);
 void print_db(const char* filename);
 void query_db(const char* filename, bool print_all, bool multimedia, bool diskless);

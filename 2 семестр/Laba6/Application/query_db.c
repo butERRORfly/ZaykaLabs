@@ -1,4 +1,5 @@
 #include "pc_db.h"
+#include "db_reader.h"
 
 // Печать информации о компьютере в табличном формате
 void print_computer(Computer pc) {
